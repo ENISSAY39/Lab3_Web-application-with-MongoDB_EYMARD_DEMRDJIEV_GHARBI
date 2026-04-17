@@ -1,3 +1,4 @@
+// 1. Création des Utilisateurs
 db.users.insertMany([
   {
     _id: "ada.lovelace@epf.fr",
@@ -69,19 +70,19 @@ db.semesters.insertOne({
 });
 
 // 3. Création des Appréciations (Notes)
-db.appreciations.insertMany([
+db.grades.insertMany([
   {
     student_email: "jean.dupont@epf.fr",
     teacher_email: "ada.lovelace@epf.fr",
     semester_id: "P2025_S4",
     evaluation_id: "COMP_ALG_1",
-    value: "A"
+    value: "Outstanding"
   },
   {
     student_email: "jean.dupont@epf.fr",
     teacher_email: "ada.lovelace@epf.fr",
     semester_id: "P2025_S4",
     evaluation_id: "COMP_WEB_1",
-    value: "B"
+    value: "Solid"
   }
 ]);
