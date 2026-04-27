@@ -1,26 +1,26 @@
 // 1. List all the semesters associated with the Teacher T.
 db.semesters.find(
-|   { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" },
-|   { _id: 1 }
-| )
+  { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" },
+  { _id: 1 }
+)
 
 
 // 2. List all potential appreciation levels associated with the semester S.
 db.semesters.find(
-|   { _id: "P2025_S4" },
-|   { appreciation_scale: 1, _id: 0 }
-| )
+  { _id: "P2025_S4" },
+  { appreciation_scale: 1, _id: 0 }
+)
 
 
 // 3. List all skills associated with the Teacher T for the semester S.
 db.semesters.aggregate([
-|   { $match: { _id: "P2025_S4", "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
-|   { $unwind: "$ues" },
-|   { $unwind: "$ues.modules" },
-|   { $unwind: "$ues.modules.submodules" },
-|   { $match: { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
-|   { $project: { _id: 0, skill: "$ues.modules.submodules.evaluations" } }
-| ])
+  { $match: { _id: "P2025_S4", "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
+  { $unwind: "$ues" },
+  { $unwind: "$ues.modules" },
+  { $unwind: "$ues.modules.submodules" },
+  { $match: { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
+  { $project: { _id: 0, skill: "$ues.modules.submodules.evaluations" } }
+])
 
 
 // 4. List all skills associated with the Teacher T for the semester S that are not
