@@ -71,10 +71,8 @@ db.semesters.find(
 // 9. List the appreciations of all the published skills associated with the
 Student St.
 db.grades.aggregate([
-  // 1. Filtrer les notes de l'étudiant
   { $match: { student_email: "jean.dupont@epf.fr" } },
   
-  // 2. Faire la jointure avec la collection semesters
   { $lookup: {
       from: "semesters",
       localField: "semester_id",
@@ -82,19 +80,16 @@ db.grades.aggregate([
       as: "semester_data"
   }},
   
-  // 3. Aplatir l'arborescence pour pouvoir la lire facilement
   { $unwind: "$semester_data" },
   { $unwind: "$semester_data.ues" },
   { $unwind: "$semester_data.ues.modules" },
   { $unwind: "$semester_data.ues.modules.submodules" },
   { $unwind: "$semester_data.ues.modules.submodules.evaluations" },
   
-  // 4. On garde la note SI l'ID correspond ET que le statut est "published"
   { $match: { 
       $expr: { $eq: ["$evaluation_id", "$semester_data.ues.modules.submodules.evaluations.id"] },
       "semester_data.ues.modules.submodules.evaluations.status": "published"
   }},
   
-  // 5. On nettoie l'affichage pour ne renvoyer que la note d'origine
   { $project: { semester_data: 0 } }
 ])
