@@ -1,0 +1,100 @@
+// 1. List all the semesters associated with the Teacher T.
+db.semesters.find(
+|   { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" },
+|   { _id: 1 }
+| )
+
+
+// 2. List all potential appreciation levels associated with the semester S.
+db.semesters.find(
+|   { _id: "P2025_S4" },
+|   { appreciation_scale: 1, _id: 0 }
+| )
+
+
+// 3. List all skills associated with the Teacher T for the semester S.
+db.semesters.aggregate([
+|   { $match: { _id: "P2025_S4", "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
+|   { $unwind: "$ues" },
+|   { $unwind: "$ues.modules" },
+|   { $unwind: "$ues.modules.submodules" },
+|   { $match: { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
+|   { $project: { _id: 0, skill: "$ues.modules.submodules.evaluations" } }
+| ])
+
+
+// 4. List all skills associated with the Teacher T for the semester S that are not
+yet published.
+db.semesters.aggregate([
+  { $match: { _id: "P2025_S4", "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
+  { $unwind: "$ues" },
+  { $unwind: "$ues.modules" },
+  { $unwind: "$ues.modules.submodules" },
+  { $match: { "ues.modules.submodules.teacher_emails": "ada.lovelace@epf.fr" } },
+  { $unwind: "$ues.modules.submodules.evaluations" },
+  { $match: { "ues.modules.submodules.evaluations.status": { $ne: "published" } } },
+  { $project: { _id: 0, skill: "$ues.modules.submodules.evaluations" } }
+])
+
+
+// 5. Teacher T update the appreciation of the skill Sk of the semester S with
+the value V.
+db.grades.updateOne(
+  { semester_id: "P2025_S4", evaluation_id: "COMP_ALG_1", student_email: "jean.dupont@epf.fr", teacher_email: "ada.lovelace@epf.fr" },
+  { $set: { value: "Basic" } },
+  { upsert: true }
+)
+
+
+// 6. Teacher T update the status of the skill Sk with the value V.
+db.semesters.updateOne(
+  { _id: "P2025_S4" },
+  { $set: { "ues.$[].modules.$[].submodules.$[].evaluations.$[eval].status": "published" } },
+  { arrayFilters: [ { "eval.id": "COMP_ALG_2" } ] }
+)
+
+
+// 7. List all the semesters associated with the Student St.
+db.grades.distinct(
+  "semester_id", 
+  { student_email: "jean.dupont@epf.fr" }
+)
+
+
+// 8. List (all the field but the appreciations) of all the skills associated with the
+Student St.
+db.semesters.find(
+  { _id: { $in: ["P2025_S4"] } }
+)
+
+
+// 9. List the appreciations of all the published skills associated with the
+Student St.
+db.grades.aggregate([
+  // 1. Filtrer les notes de l'étudiant
+  { $match: { student_email: "jean.dupont@epf.fr" } },
+  
+  // 2. Faire la jointure avec la collection semesters
+  { $lookup: {
+      from: "semesters",
+      localField: "semester_id",
+      foreignField: "_id",
+      as: "semester_data"
+  }},
+  
+  // 3. Aplatir l'arborescence pour pouvoir la lire facilement
+  { $unwind: "$semester_data" },
+  { $unwind: "$semester_data.ues" },
+  { $unwind: "$semester_data.ues.modules" },
+  { $unwind: "$semester_data.ues.modules.submodules" },
+  { $unwind: "$semester_data.ues.modules.submodules.evaluations" },
+  
+  // 4. On garde la note SI l'ID correspond ET que le statut est "published"
+  { $match: { 
+      $expr: { $eq: ["$evaluation_id", "$semester_data.ues.modules.submodules.evaluations.id"] },
+      "semester_data.ues.modules.submodules.evaluations.status": "published"
+  }},
+  
+  // 5. On nettoie l'affichage pour ne renvoyer que la note d'origine
+  { $project: { semester_data: 0 } }
+])
